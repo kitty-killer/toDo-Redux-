@@ -1,41 +1,46 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import {
+    useGetTasksQuery,
+    useUpdateTaskMutation,
+    useDeleteTaskMutation
+} from '../../services/taskApi';
 import { useNavigate } from 'react-router';
-import { editTask, deleteTask } from '../../store/taskSlice';
 import './TaskList.scss';
 
 const TaskList = () => {
     const [isSorted, setIsSorted] = useState(false);
-    const tasks = useSelector((state) => state.tasks);
-    const dispatch = useDispatch();
+    const { data: tasks = [] } = useGetTasksQuery();
+    const [updateTask] = useUpdateTaskMutation();
+    const [deleteTask] = useDeleteTaskMutation();
     const navigate = useNavigate();
-    const [editIndex, setEditIndex] = useState(null);
+    const [editId, setEditId] = useState(null);
     const [editText, setEditText] = useState('');
 
-    const goToAddTask = () => {
-        navigate('/');
+    const goToAddTask = () => navigate('/');
+
+    const handleEdit = (task) => {
+        setEditId(task.id);
+        setEditText(task.text);
     };
 
-    const handleEdit = (index) => {
-        setEditIndex(index);
-        setEditText(tasks[index]);
+    const saveEdit = async () => {
+        if (editText.trim()) {
+            await updateTask({ id: editId, text: editText });
+            setEditId(null);
+            setEditText('');
+        }
     };
 
-    const saveEdit = (index) => {
-        dispatch(editTask({ index, newTask: editText }));
-        setEditIndex(null);
-        setEditText('');
+    const handleDelete = async (id) => {
+        await deleteTask(id);
     };
 
-    const handleDelete = (index) => {
-        dispatch(deleteTask(index));
-    };
+    const toggleSort = () => setIsSorted(!isSorted);
 
-    const toggleSort = () => {
-        setIsSorted(!isSorted);
-    };
+    const sortedTasks = isSorted
+        ? [...tasks].sort((a, b) => a.text.localeCompare(b.text))
+        : tasks;
 
-    const sortedTasks = isSorted ? [...tasks].sort((a, b) => a.localeCompare(b)) : tasks;
 
     return (
         <div className="task-list-container">
@@ -53,9 +58,9 @@ const TaskList = () => {
             ) : (
                 <ul className="task-list">
                     {sortedTasks.map((task, index) => (
-                        <li key={index} className="task-item">
+                        <li key={task.id} className="task-item">
                             <span className="task-number">{index + 1}.</span>
-                            {editIndex === index ? (
+                            {editId === task.id ? (
                                 <input
                                     type="text"
                                     className="edit-input"
@@ -63,20 +68,20 @@ const TaskList = () => {
                                     onChange={(e) => setEditText(e.target.value)}
                                 />
                             ) : (
-                                <span className="task-text">{task}</span>
+                                <span className="task-text">{task.text}</span>
                             )}
                             <button
-                                onClick={() => handleEdit(index)}
-                                className={`button ${editIndex === index ? 'hidden' : ''}`}
+                                onClick={() => handleEdit(task)}
+                                className={`button ${editId === task.id ? 'hidden' : ''}`}
                             >
                                 Редактировать
                             </button>
-                            {editIndex === index && (
-                                <button onClick={() => saveEdit(index)} className="button">
+                            {editId === task.id && (
+                                <button onClick={saveEdit} className="button">
                                     Сохранить
                                 </button>
                             )}
-                            <button onClick={() => handleDelete(index)} className="button">
+                            <button onClick={() => handleDelete(task.id)} className="button">
                                 Удалить
                             </button>
                         </li>

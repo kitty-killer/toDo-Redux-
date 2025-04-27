@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addTask } from '../../store/taskSlice';
+import { useAddTaskMutation } from '../../services/taskApi';
 import { useNavigate } from 'react-router';
 import './AddTask.scss';
 
 const AddTask = () => {
     const [task, setTask] = useState('');
-    const dispatch = useDispatch();
+    const [addTask] = useAddTaskMutation();
     const navigate = useNavigate();
 
-    const handleAddTask = () => {
+    const handleAddTask = async () => {
         if (task.trim()) {
-            dispatch(addTask(task));
+            await addTask({ text: task });
             setTask('');
         }
     };
@@ -31,17 +30,11 @@ const AddTask = () => {
                     placeholder="Введите задачу..."
                     className="task-input"
                 />
-                <button
-                    onClick={handleAddTask}
-                    className="add-button"
-                >
+                <button onClick={handleAddTask} className="add-button">
                     Добавить
                 </button>
             </div>
-            <button
-                onClick={goToTaskList}
-                className="view-tasks-button"
-            >
+            <button onClick={goToTaskList} className="view-tasks-button">
                 Просмотреть задачи
             </button>
         </div>
